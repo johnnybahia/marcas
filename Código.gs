@@ -21,7 +21,7 @@ function doPost(e) {
     if (!sheet) {
       // Se não existir, cria e põe cabeçalho
       sheet = doc.insertSheet("Dados");
-      sheet.appendRow(["Data de Entrega", "Data Recebimento", "Arquivo", "Cliente", "Marca", "Local Entrega", "Qtd", "Unidade", "Valor (R$)"]);
+      sheet.appendRow(["Data de Entrega", "Data Recebimento", "Arquivo", "Cliente", "Marca", "Local Entrega", "Qtd", "Unidade", "Valor (R$)", "Ordem de Compra"]);
     }
 
     var json = JSON.parse(e.postData.contents);
@@ -49,13 +49,14 @@ function doPost(e) {
           p.local,
           p.qtd,
           p.unidade,
-          p.valor
+          p.valor,
+          p.ordemCompra || "N/D"                     // Ordem de Compra
         ]);
       }
     }
 
     if (novasLinhas.length > 0) {
-      sheet.getRange(ultimaLinha + 1, 1, novasLinhas.length, 9).setValues(novasLinhas);
+      sheet.getRange(ultimaLinha + 1, 1, novasLinhas.length, 10).setValues(novasLinhas);
       return ContentService.createTextOutput(JSON.stringify({"status":"Sucesso", "msg": novasLinhas.length + " novos."})).setMimeType(ContentService.MimeType.JSON);
     } else {
       return ContentService.createTextOutput(JSON.stringify({"status":"Neutro", "msg": "Sem novidades."})).setMimeType(ContentService.MimeType.JSON);
@@ -89,7 +90,7 @@ function getDadosPlanilha() {
     var numLinhas = Math.min(1000, lastRow - 1);
     var inicio = lastRow - numLinhas + 1;
 
-    var dados = sheet.getRange(inicio, 1, numLinhas, 9).getValues();
+    var dados = sheet.getRange(inicio, 1, numLinhas, 10).getValues();
     Logger.log("✅ Recuperados " + dados.length + " registros");
 
     // Formata os dados para garantir compatibilidade
@@ -103,7 +104,8 @@ function getDadosPlanilha() {
         row[5] ? row[5].toString() : "", // Local Entrega
         formatarNumero(row[6]),          // Qtd
         row[7] ? row[7].toString() : "", // Unidade
-        formatarValor(row[8])            // Valor (R$)
+        formatarValor(row[8]),           // Valor (R$)
+        row[9] ? row[9].toString() : ""  // Ordem de Compra
       ];
     });
 

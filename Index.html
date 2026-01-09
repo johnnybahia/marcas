@@ -365,6 +365,7 @@
             <tr>
               <th>Data de Entrega</th>
               <th>Data Recebimento</th>
+              <th>Ordem de Compra</th>
               <th>Cliente</th>
               <th>Marca</th>
               <th>Local Entrega</th>
@@ -539,7 +540,7 @@
         var linhasIgnoradas = 0;
 
         dadosBrutos.forEach(function(row) {
-          if (!row || row.length < 9) {
+          if (!row || row.length < 10) {
             linhasIgnoradas++;
             return; // Ignora linhas quebradas
           }
@@ -639,7 +640,7 @@
       tbody.innerHTML = "";
       
       if (!dados || dados.length === 0) {
-        tbody.innerHTML = "<tr><td colspan='7' style='text-align:center; padding:30px; color:#999;'>Nenhum registro encontrado para estes filtros.</td></tr>";
+        tbody.innerHTML = "<tr><td colspan='9' style='text-align:center; padding:30px; color:#999;'>Nenhum registro encontrado para estes filtros.</td></tr>";
         return;
       }
 
@@ -658,6 +659,7 @@
         tr.innerHTML = `
           <td>${r[0]}</td>
           <td>${r[1]}</td>
+          <td><b style="color:#2980b9;">${r[9] || 'N/D'}</b></td>
           <td><b>${r[3]}</b></td>
           <td>${r[4]}</td>
           <td>${r[5]}</td>
@@ -840,7 +842,7 @@
       // Agrupa dados por marca do mês selecionado
       if (dadosBrutos && dadosBrutos.length > 0) {
         dadosBrutos.forEach(function(row) {
-          if (!row || row.length < 9) return;
+          if (!row || row.length < 10) return;
 
           var mesAnoEntrega = extrairMesAno(row[0]); // Data de Entrega
 
@@ -1023,6 +1025,7 @@
         tr.innerHTML = `
           <td>${r[0]}</td>
           <td>${r[1]}</td>
+          <td><b style="color:#2980b9;">${r[9] || 'N/D'}</b></td>
           <td><b>${r[3]}</b></td>
           <td>${r[4]}</td>
           <td>${r[5]}</td>
