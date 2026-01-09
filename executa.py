@@ -59,19 +59,23 @@ def processar_pdf_dass(caminho_arquivo, nome_arquivo):
             # --- 2. DATA DO PEDIDO (Entrega) ---
             # CORREÇÃO: Só busca a data DEPOIS de encontrar "Prev. Ent." para ignorar CEPs do cabeçalho
             idx_inicio_tabela = texto_completo.find("Prev. Ent.")
-            if idx_inicio_tabela == -1: 
+            if idx_inicio_tabela == -1:
                 idx_inicio_tabela = 0 # Se não achar o cabeçalho, procura no texto todo (fallback)
-            
+
             texto_para_busca = texto_completo[idx_inicio_tabela:]
-            
+
             # Procura NCM (8 dígitos) seguido de Data
             match_entrega = re.search(r'\d{8}.*?(\d{2}/\d{2}/\d{4})', texto_para_busca, re.DOTALL)
-            
+
             if match_entrega:
                 data_pedido = match_entrega.group(1)
             else:
                 # Se não achar data na tabela, usa a de emissão como fallback
                 data_pedido = data_recebimento
+
+            # --- 3. ORDEM DE COMPRA ---
+            match_ordem = re.search(r'Ordem de compra\s+(\d+)', texto_completo, re.IGNORECASE)
+            ordem_compra = match_ordem.group(1) if match_ordem else "N/D"
 
             # --- DADOS GERAIS ---
             match_marca = re.search(r'Marca:\s*([^\n]+)', texto_completo)
@@ -104,7 +108,8 @@ def processar_pdf_dass(caminho_arquivo, nome_arquivo):
                 "local": local_geral,
                 "qtd": qtd_total_doc,
                 "unidade": unidade_geral,
-                "valor": valor_formatado
+                "valor": valor_formatado,
+                "ordemCompra": ordem_compra          # Ordem de Compra
             }
 
             return [pedido_unico]
@@ -136,9 +141,9 @@ def main():
     arquivos = [f for f in os.listdir(PASTA_ENTRADA) if f.lower().endswith('.pdf')]
 
     print(f"📂 Processando {len(arquivos)} arquivos...")
-    print("-" * 75)
-    print(f"{'EMISSÃO':<12} | {'ENTREGA':<12} | {'MARCA':<15} | {'VALOR'}")
-    print("-" * 75)
+    print("-" * 95)
+    print(f"{'EMISSÃO':<12} | {'ENTREGA':<12} | {'OC':<10} | {'MARCA':<15} | {'VALOR'}")
+    print("-" * 95)
 
     for arq in arquivos:
         lista_pedidos = processar_pdf_dass(os.path.join(PASTA_ENTRADA, arq), arq)
@@ -146,7 +151,7 @@ def main():
         if lista_pedidos:
             for p in lista_pedidos:
                 todos_pedidos_para_envio.append(p)
-                print(f"✅ {p['dataRecebimento']:<12} | {p['dataPedido']:<12} | {p['marca']:<15} | {p['valor']}")
+                print(f"✅ {p['dataRecebimento']:<12} | {p['dataPedido']:<12} | {p['ordemCompra']:<10} | {p['marca']:<15} | {p['valor']}")
             arquivos_para_mover.append(arq)
         else:
             print(f"⚠️ Ignorado: {arq}")
