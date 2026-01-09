@@ -1,0 +1,1051 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pedidos por Marca - Marfim Bahia</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --primary-color: #d32f2f; /* Vermelho Marfim */
+      --dark-bg: #2c3e50;
+      --light-bg: #f4f6f8;
+      --card-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    body { font-family: 'Roboto', sans-serif; background-color: var(--light-bg); margin: 0; padding: 0; color: #333; }
+    
+    /* CABEÇALHO */
+    .header {
+      background-color: white;
+      padding: 15px 40px;
+      display: flex;
+      align-items: center;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+      border-bottom: 3px solid var(--primary-color);
+    }
+    .logo-img { height: 60px; margin-right: 20px; }
+    .header-title { font-size: 24px; font-weight: 700; color: #333; }
+    .header-subtitle { font-size: 14px; color: #666; margin-top: 5px; }
+
+    /* CONTAINER PRINCIPAL */
+    .container { max-width: 1200px; margin: 30px auto; padding: 0 20px; }
+
+    /* CARDS DE KPI (TOTAIS) */
+    .kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 30px; }
+    .kpi-card {
+      background: white; border-radius: 8px; padding: 20px;
+      box-shadow: var(--card-shadow); border-left: 5px solid var(--primary-color);
+      transition: transform 0.2s;
+    }
+    .kpi-card:hover { transform: translateY(-3px); }
+    .kpi-title { font-size: 14px; color: #7f8c8d; text-transform: uppercase; letter-spacing: 1px; }
+    .kpi-value { font-size: 28px; font-weight: 700; color: #2c3e50; margin-top: 10px; }
+    .kpi-sub { font-size: 12px; color: #999; margin-top: 5px; }
+
+    /* FILTROS (FUNIL) */
+    .filters-box {
+      background: white; padding: 20px; border-radius: 8px; box-shadow: var(--card-shadow);
+      margin-bottom: 30px; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;
+    }
+    .filter-group label { display: block; font-size: 12px; font-weight: bold; margin-bottom: 5px; color: #555; }
+    .filter-group select {
+      width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px;
+      background-color: #fff; font-size: 14px; cursor: pointer;
+    }
+    
+    /* TABELA */
+    .table-container { background: white; border-radius: 8px; box-shadow: var(--card-shadow); overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; min-width: 600px; }
+    th { background-color: #f8f9fa; color: #555; font-weight: 600; padding: 15px; text-align: left; border-bottom: 2px solid #eee; }
+    td { padding: 12px 15px; border-bottom: 1px solid #eee; font-size: 14px; }
+    tr:hover { background-color: #f9f9f9; }
+    
+    /* Mensagens */
+    #loading { text-align: center; padding: 50px; font-size: 18px; color: #666; font-weight: 500;}
+    .badge { padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; text-transform: uppercase; }
+    .badge-par { background-color: #e8f5e9; color: #2e7d32; }
+    .badge-metro { background-color: #fff3e0; color: #ef6c00; }
+
+    /* Spinner Animado */
+    .spinner {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid var(--primary-color);
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 20px;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* Console de Debug */
+    .debug-console {
+      background: #263238;
+      color: #aed581;
+      padding: 15px;
+      border-radius: 6px;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      margin-bottom: 20px;
+      max-height: 200px;
+      overflow-y: auto;
+      display: none;
+    }
+    .debug-line { margin: 5px 0; }
+
+    /* Botão de Imprimir */
+    .btn-print {
+      background-color: #2980b9;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 20px;
+      transition: background-color 0.3s;
+      box-shadow: var(--card-shadow);
+    }
+    .btn-print:hover {
+      background-color: #1f618d;
+      transform: translateY(-2px);
+    }
+
+    /* Estilos para Impressão */
+    @media print {
+      body { background-color: white; margin: 0; padding: 20px; }
+      .header { border-bottom: 2px solid #000; }
+      .btn-print, .filters-box, .debug-console, #loading { display: none !important; }
+      .container { max-width: 100%; margin: 0; padding: 0; }
+      .kpi-row { page-break-inside: avoid; }
+      .kpi-card { box-shadow: none; border: 1px solid #ddd; }
+      .table-container { box-shadow: none; overflow: visible; }
+      table { font-size: 10px; page-break-inside: auto; }
+      tr { page-break-inside: avoid; page-break-after: auto; }
+      thead { display: table-header-group; }
+      .no-print { display: none !important; }
+      .print-only { display: block !important; }
+    }
+
+    .print-only { display: none; }
+    .print-info {
+      background: #f8f9fa;
+      padding: 15px;
+      margin-bottom: 20px;
+      border-radius: 6px;
+      border-left: 4px solid var(--primary-color);
+    }
+    .print-info h3 { margin: 0 0 10px 0; color: #2c3e50; }
+    .print-info p { margin: 5px 0; font-size: 13px; color: #555; }
+
+    /* SEÇÃO DE TOTAIS POR MARCA */
+    .marcas-mes-container {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: var(--card-shadow);
+      margin-bottom: 30px;
+    }
+    .marcas-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      gap: 15px;
+    }
+    .marcas-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #2c3e50;
+    }
+    .marcas-filter {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .marcas-filter label {
+      font-size: 13px;
+      font-weight: 600;
+      color: #555;
+    }
+    .marcas-filter select {
+      padding: 8px 12px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      background-color: #fff;
+      font-size: 14px;
+      cursor: pointer;
+      min-width: 150px;
+    }
+    .dias-uteis-info {
+      font-size: 13px;
+      color: #555;
+      font-weight: 600;
+      padding: 8px 12px;
+      background-color: #f8f9fa;
+      border-radius: 4px;
+      border: 1px solid #e0e0e0;
+    }
+    .dias-uteis-numero {
+      color: #2980b9;
+      font-weight: 700;
+      font-size: 14px;
+    }
+    .marcas-tabela {
+      overflow-x: auto;
+    }
+    .marcas-tabela table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .marcas-tabela th {
+      background-color: #f8f9fa;
+      color: #555;
+      font-weight: 600;
+      padding: 12px 15px;
+      text-align: left;
+      border-bottom: 2px solid #eee;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .marcas-tabela td {
+      padding: 12px 15px;
+      border-bottom: 1px solid #eee;
+      font-size: 14px;
+    }
+    .marcas-tabela tr:hover {
+      background-color: #f9f9f9;
+    }
+    .marcas-tabela .marca-nome {
+      font-weight: 600;
+      color: #2c3e50;
+    }
+    .marcas-tabela .valor-destaque {
+      font-weight: 700;
+      color: #27ae60;
+    }
+    .marcas-tabela .qtd-destaque {
+      font-weight: 600;
+      color: #2980b9;
+    }
+    .marcas-empty {
+      text-align: center;
+      padding: 40px;
+      color: #999;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <img src="https://i.ibb.co/FGGjdsM/LOGO-MARFIM.jpg" alt="Logo Marfim" class="logo-img">
+    <div>
+      <div class="header-title">PEDIDO POR MARCA</div>
+      <div class="header-subtitle">MARFIM BAHIA - Painel Gerencial</div>
+    </div>
+  </div>
+
+  <div class="container">
+
+    <div id="loading">
+      <div class="spinner"></div>
+      <p>🔄 Conectando à planilha... Aguarde.</p>
+      <p style="font-size: 12px; color: #999;">Carregando dados do Google Sheets</p>
+    </div>
+
+    <!-- Console de Debug (pressione Ctrl+D para mostrar/ocultar) -->
+    <div id="debugConsole" class="debug-console">
+      <div style="color: #82b1ff; font-weight: bold; margin-bottom: 10px;">📋 DEBUG LOG:</div>
+      <div id="debugContent"></div>
+    </div>
+
+    <div id="dashboard" style="display:none;">
+
+      <button class="btn-print" onclick="imprimirRelatorio()">🖨️ Imprimir Relatório</button>
+
+      <!-- Informações do Relatório (visível apenas na impressão) -->
+      <div class="print-only print-info" id="printInfo">
+        <h3>📋 Relatório de Pedidos por Marca</h3>
+        <p><strong>Data/Hora:</strong> <span id="printDataHora"></span></p>
+        <p><strong>Filtros Aplicados:</strong> <span id="printFiltros"></span></p>
+        <p><strong>Total de Registros:</strong> <span id="printTotalRegistros"></span></p>
+      </div>
+
+      <div class="filters-box">
+        <div class="filter-group">
+          <label>📅 Mês/Ano Entrega</label>
+          <select id="selMesEntrega" onchange="aplicarFiltros()"><option value="Todos">Todos</option></select>
+        </div>
+        <div class="filter-group">
+          <label>📆 Data de Entrega</label>
+          <select id="selDataEntrega" onchange="aplicarFiltros()"><option value="Todos">Todos</option></select>
+        </div>
+        <div class="filter-group">
+          <label>📆 Data Recebimento</label>
+          <select id="selDataRecebimento" onchange="aplicarFiltros()"><option value="Todos">Todos</option></select>
+        </div>
+        <div class="filter-group">
+          <label>🏢 Cliente</label>
+          <select id="selCliente" onchange="atualizarFunilCliente()"><option value="Todos">Todos</option></select>
+        </div>
+        <div class="filter-group">
+          <label>🏷️ Marca</label>
+          <select id="selMarca" onchange="aplicarFiltros()"><option value="Todos">Todas</option></select>
+        </div>
+        <div class="filter-group">
+          <label>📍 Local Entrega</label>
+          <select id="selLocal" onchange="aplicarFiltros()"><option value="Todos">Todos</option></select>
+        </div>
+      </div>
+
+      <!-- SEÇÃO: TOTAIS POR MARCA DO MÊS -->
+      <div class="marcas-mes-container">
+        <div class="marcas-header">
+          <div class="marcas-title">📊 Totais por Marca</div>
+          <div class="marcas-filter">
+            <label>🗓️ Mês de Entrega:</label>
+            <select id="selMesMarcas" onchange="atualizarTotaisPorMarca()">
+              <option value="">Carregando...</option>
+            </select>
+            <span class="dias-uteis-info">
+              📅 Dias Úteis: <span id="diasUteisDisplay" class="dias-uteis-numero">--</span>
+            </span>
+          </div>
+        </div>
+        <div class="marcas-tabela">
+          <table>
+            <thead>
+              <tr>
+                <th>Marca</th>
+                <th>Total em Reais</th>
+                <th>Total em Pares</th>
+                <th>Pares/Dia Útil</th>
+                <th>Total em Metros</th>
+              </tr>
+            </thead>
+            <tbody id="tabelaMarcas">
+              <tr>
+                <td colspan="5" class="marcas-empty">Carregando dados...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="kpi-row">
+        <div class="kpi-card" style="border-left-color: #27ae60;">
+          <div class="kpi-title">Faturamento Total</div>
+          <div class="kpi-value" id="kpiValor">R$ 0,00</div>
+          <div class="kpi-sub">Soma dos pedidos filtrados</div>
+        </div>
+        <div class="kpi-card" style="border-left-color: #2980b9;">
+          <div class="kpi-title">Total em Pares</div>
+          <div class="kpi-value" id="kpiPares">0</div>
+          <div class="kpi-sub">Unidades tipo PAR</div>
+        </div>
+        <div class="kpi-card" style="border-left-color: #e67e22;">
+          <div class="kpi-title">Total em Metros</div>
+          <div class="kpi-value" id="kpiMetros">0</div>
+          <div class="kpi-sub">Unidades tipo METRO</div>
+        </div>
+      </div>
+
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Data de Entrega</th>
+              <th>Data Recebimento</th>
+              <th>Cliente</th>
+              <th>Marca</th>
+              <th>Local Entrega</th>
+              <th>Qtd</th>
+              <th>Unidade</th>
+              <th>Valor (R$)</th>
+            </tr>
+          </thead>
+          <tbody id="tabelaCorpo">
+            </tbody>
+        </table>
+        <div class="no-print" style="padding: 15px; text-align: center; color: #888; font-size: 12px; border-top: 1px solid #eee;">
+          Mostrando os últimos 50 registros filtrados. Use "Imprimir Relatório" para ver todos os dados.
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    var dadosBrutos = []; // Variável global segura
+    var linhasFiltradas = []; // Para exportação CSV
+
+    // Função de Debug
+    function addDebugLog(msg, tipo = "info") {
+      var debugContent = document.getElementById("debugContent");
+      var timestamp = new Date().toLocaleTimeString();
+      var icon = tipo === "error" ? "❌" : tipo === "success" ? "✅" : "📌";
+      var linha = document.createElement("div");
+      linha.className = "debug-line";
+      linha.innerHTML = "[" + timestamp + "] " + icon + " " + msg;
+      debugContent.appendChild(linha);
+      debugContent.scrollTop = debugContent.scrollHeight;
+      console.log(msg);
+    }
+
+    // Atalho Ctrl+D para mostrar/ocultar console de debug
+    document.addEventListener('keydown', function(e) {
+      if (e.ctrlKey && e.key === 'd') {
+        e.preventDefault();
+        var console = document.getElementById("debugConsole");
+        console.style.display = console.style.display === 'none' ? 'block' : 'none';
+      }
+    });
+
+    // Inicia quando a página carrega
+    window.onload = function() {
+      addDebugLog("🚀 Iniciando carregamento de dados...");
+
+      google.script.run
+        .withFailureHandler(function(erro) {
+           addDebugLog("Erro no Backend: " + erro.message, "error");
+           console.error("Erro no Backend:", erro);
+           document.getElementById("loading").innerHTML = "❌ <b>Erro ao buscar dados:</b><br>" + erro.message + "<br><br><small>Pressione Ctrl+D para ver logs detalhados</small>";
+        })
+        .withSuccessHandler(processarDadosIniciais)
+        .getDadosPlanilha();
+    };
+
+    function processarDadosIniciais(dados) {
+      // 1. Blindagem contra Nulos
+      if (!dados) {
+        addDebugLog("⚠️ Retorno nulo do backend. Assumindo lista vazia.", "error");
+        dados = [];
+      }
+
+      addDebugLog("📦 Dados recebidos: " + (Array.isArray(dados) ? dados.length : "não é array") + " registros");
+
+      // Debug: Mostra estrutura dos primeiros registros
+      if (dados && dados.length > 0) {
+        addDebugLog("🔍 Primeira linha de exemplo: " + JSON.stringify(dados[0]), "success");
+        addDebugLog("📊 Colunas por linha: " + (dados[0] ? dados[0].length : "N/A"));
+      }
+
+      dadosBrutos = dados;
+
+      // 2. Se vazio, avisa mas carrega a tela
+      if (dadosBrutos.length === 0) {
+         addDebugLog("⚠️ Planilha vazia! Nenhum dado encontrado.", "error");
+         document.getElementById("loading").innerHTML = "⚠️ A planilha 'Dados' existe mas está vazia. Rode o Python primeiro.<br><br><small>Pressione Ctrl+D para ver logs detalhados</small>";
+         // Mesmo vazio, libera o dashboard para ver que carregou
+         setTimeout(function() {
+            document.getElementById("loading").style.display = "none";
+            document.getElementById("dashboard").style.display = "block";
+         }, 2000);
+         return;
+      }
+
+      // 3. Popula filtros iniciais com segurança
+      // Índices: 0=DataEntrega, 1=DataRecebimento, 2=Arquivo, 3=Cliente, 4=Marca, 5=LocalEntrega
+      try {
+        addDebugLog("🔧 Populando filtros...");
+        popularSelect("selMesEntrega", 0);       // Data de Entrega (Mês/Ano)
+        popularSelectData("selDataEntrega", 0);  // Data de Entrega (completa)
+        popularSelectData("selDataRecebimento", 1);  // Data Recebimento
+        popularSelect("selCliente", 3);          // Cliente
+        popularSelect("selMarca", 4);            // Marca
+        popularSelect("selLocal", 5);            // Local Entrega
+        addDebugLog("✅ Filtros populados com sucesso", "success");
+      } catch (e) {
+        addDebugLog("Erro ao popular selects: " + e.message, "error");
+        console.error("Erro ao popular selects:", e);
+      }
+
+      // 3.1. Popula filtro de mês para totais por marca
+      try {
+        addDebugLog("🔧 Populando filtro de mês para totais por marca...");
+        popularSelectMesMarcas();
+        addDebugLog("✅ Filtro de mês para marcas populado com sucesso", "success");
+      } catch (e) {
+        addDebugLog("Erro ao popular filtro de mês das marcas: " + e.message, "error");
+        console.error("Erro ao popular filtro de mês das marcas:", e);
+      }
+
+      // 4. Libera a tela
+      addDebugLog("✅ Carregamento concluído! Exibindo dashboard...", "success");
+      document.getElementById("loading").style.display = "none";
+      document.getElementById("dashboard").style.display = "block";
+
+      aplicarFiltros();
+    }
+
+    // Função de Funil: Filtra Marcas baseado no Cliente
+    function atualizarFunilCliente() {
+      var clienteSelecionado = document.getElementById("selCliente").value;
+      var selectMarca = document.getElementById("selMarca");
+
+      // Limpa e reseta
+      selectMarca.innerHTML = '<option value="Todos">Todas</option>';
+
+      var marcasDisponiveis = new Set();
+
+      if (dadosBrutos && dadosBrutos.length > 0) {
+        dadosBrutos.forEach(function(r) {
+          if (!r) return; // Pula linha vazia
+          // Se Cliente for Todos ou bater com a linha (índice 3 = Cliente)
+          if (clienteSelecionado === "Todos" || r[3] === clienteSelecionado) {
+            if(r[4]) marcasDisponiveis.add(r[4]); // índice 4 = Marca
+          }
+        });
+      }
+
+      // Ordena e adiciona ao select
+      Array.from(marcasDisponiveis).sort().forEach(function(m) {
+        var opt = document.createElement("option");
+        opt.value = m;
+        opt.innerText = m;
+        selectMarca.appendChild(opt);
+      });
+
+      aplicarFiltros();
+    }
+
+    // Função Principal: Filtra dados e calcula Totais
+    function aplicarFiltros() {
+      var fMesEntrega = document.getElementById("selMesEntrega").value;
+      var fDataEntrega = document.getElementById("selDataEntrega").value;
+      var fDataRecebimento = document.getElementById("selDataRecebimento").value;
+      var fCliente = document.getElementById("selCliente").value;
+      var fMarca = document.getElementById("selMarca").value;
+      var fLocal = document.getElementById("selLocal").value;
+
+      addDebugLog("🔍 Aplicando filtros - Mês Entrega: " + fMesEntrega + ", Data Entrega: " + fDataEntrega + ", Data Receb: " + fDataRecebimento + ", Cliente: " + fCliente + ", Marca: " + fMarca + ", Local: " + fLocal);
+
+      var totalValor = 0;
+      var totalPares = 0;
+      var totalMetros = 0;
+      linhasFiltradas = []; // Atualiza variável global para exportação
+
+      if (dadosBrutos && dadosBrutos.length > 0) {
+        var linhasProcessadas = 0;
+        var linhasIgnoradas = 0;
+
+        dadosBrutos.forEach(function(row) {
+          if (!row || row.length < 9) {
+            linhasIgnoradas++;
+            return; // Ignora linhas quebradas
+          }
+
+          var mesAno = extrairMesAno(row[0]); // Data de Entrega
+          var qtd = limparNumero(row[6]);
+
+          // ✅ FILTRO: Ignora linhas com quantidade 0
+          if (qtd === 0) {
+            linhasIgnoradas++;
+            return;
+          }
+
+          // Aplica os 6 filtros
+          if (fMesEntrega !== "Todos" && mesAno !== fMesEntrega) return;
+          if (fDataEntrega !== "Todos" && row[0] !== fDataEntrega) return; // Data de Entrega
+          if (fDataRecebimento !== "Todos" && row[1] !== fDataRecebimento) return; // Data Recebimento
+          if (fCliente !== "Todos" && row[3] !== fCliente) return;
+          if (fMarca !== "Todos" && row[4] !== fMarca) return;
+          if (fLocal !== "Todos" && row[5] !== fLocal) return;
+
+          linhasFiltradas.push(row);
+          linhasProcessadas++;
+
+          // Soma Valor (índice 8)
+          var valorLimpo = limparNumero(row[8]);
+          totalValor += valorLimpo;
+
+          // Soma Qtd (Separa Pares vs Metros) - índices 6 e 7
+          var und = (row[7] || "").toString().toUpperCase();
+
+          if (und.includes("PAR")) {
+            totalPares += qtd;
+          } else if (und.includes("M") || und.includes("METRO")) {
+            totalMetros += qtd;
+          }
+        });
+
+        addDebugLog("✅ Filtro aplicado: " + linhasFiltradas.length + " registros encontrados (Total: " + dadosBrutos.length + ", Ignoradas: " + linhasIgnoradas + ")", "success");
+        addDebugLog("💰 Total calculado: R$ " + totalValor.toFixed(2) + " | Pares: " + totalPares + " | Metros: " + totalMetros);
+      } else {
+        addDebugLog("⚠️ Nenhum dado bruto disponível para filtrar", "error");
+      }
+
+      atualizarKPIs(totalValor, totalPares, totalMetros);
+      atualizarTabela(linhasFiltradas);
+    }
+
+    // Converte textos de dinheiro para número real
+    function limparNumero(valorTexto) {
+      if (!valorTexto) return 0;
+
+      // Se já é número, retorna direto
+      if (typeof valorTexto === 'number') {
+        return valorTexto;
+      }
+
+      // Remove R$, espaços e outros caracteres não numéricos exceto , . -
+      var v = valorTexto.toString()
+        .replace("R$", "")
+        .replace(/\s/g, "")
+        .trim();
+
+      // Lógica para detectar padrão brasileiro (1.000,00)
+      if (v.indexOf(',') > -1) {
+         // Remove pontos de milhar e troca vírgula por ponto decimal
+         v = v.replace(/\./g, '').replace(',', '.');
+      }
+
+      var resultado = parseFloat(v) || 0;
+      return resultado;
+    }
+
+    // Extrai MM/AAAA da data
+    function extrairMesAno(dataTexto) {
+      if (!dataTexto) return "Outros";
+      // Espera DD/MM/AAAA ...
+      var partes = dataTexto.split('/'); 
+      if (partes.length >= 3) {
+         // Pega mês e ano (primeiros 4 digitos da parte do ano)
+         var ano = partes[2].substring(0, 4);
+         return partes[1] + "/" + ano;
+      }
+      return "Outros";
+    }
+
+    // Atualiza os cartões coloridos
+    function atualizarKPIs(v, p, m) {
+      document.getElementById("kpiValor").innerText = v.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'});
+      document.getElementById("kpiPares").innerText = p.toLocaleString('pt-BR');
+      document.getElementById("kpiMetros").innerText = m.toLocaleString('pt-BR');
+    }
+
+    // Desenha a tabela
+    function atualizarTabela(dados) {
+      var tbody = document.getElementById("tabelaCorpo");
+      tbody.innerHTML = "";
+      
+      if (!dados || dados.length === 0) {
+        tbody.innerHTML = "<tr><td colspan='7' style='text-align:center; padding:30px; color:#999;'>Nenhum registro encontrado para estes filtros.</td></tr>";
+        return;
+      }
+
+      // Pega os ultimos 50 e inverte para mostrar mais recentes primeiro
+      var dadosRecentes = dados.slice(-50).reverse();
+
+      dadosRecentes.forEach(function(r) {
+        var tr = document.createElement("tr");
+
+        var classeBadge = "";
+        var textoUnd = (r[7] || "").toUpperCase(); // índice 7 = Unidade
+        if(textoUnd.includes("PAR")) classeBadge = "badge badge-par";
+        else if(textoUnd.includes("M")) classeBadge = "badge badge-metro";
+        else classeBadge = "badge";
+
+        tr.innerHTML = `
+          <td>${r[0]}</td>
+          <td>${r[1]}</td>
+          <td><b>${r[3]}</b></td>
+          <td>${r[4]}</td>
+          <td>${r[5]}</td>
+          <td>${r[6]}</td>
+          <td><span class="${classeBadge}">${r[7]}</span></td>
+          <td style="color:#2c3e50; font-weight:bold;">${r[8]}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // Preenche os selects (dropdowns) - para Mês/Ano
+    function popularSelect(id, indexCol) {
+      var sel = document.getElementById(id);
+      if (!sel) return;
+
+      var unicos = new Set();
+
+      if (dadosBrutos) {
+        dadosBrutos.forEach(function(r) {
+          if (!r) return;
+          var val = r[indexCol];
+          if (indexCol === 0) val = extrairMesAno(val);
+          if (val && val.trim() !== "") unicos.add(val);
+        });
+      }
+
+      Array.from(unicos).sort().forEach(function(u) {
+        var opt = document.createElement("option");
+        opt.value = u;
+        opt.innerText = u;
+        sel.appendChild(opt);
+      });
+    }
+
+    // Preenche selects com datas completas (DD/MM/AAAA)
+    function popularSelectData(id, indexCol) {
+      var sel = document.getElementById(id);
+      if (!sel) return;
+
+      var unicos = new Set();
+
+      if (dadosBrutos) {
+        dadosBrutos.forEach(function(r) {
+          if (!r) return;
+          var val = r[indexCol];
+          if (val && val.toString().trim() !== "") {
+            unicos.add(val.toString().trim());
+          }
+        });
+      }
+
+      // Ordena as datas
+      Array.from(unicos).sort(function(a, b) {
+        // Converte DD/MM/AAAA para objeto Date para ordenar corretamente
+        var partsA = a.split('/');
+        var partsB = b.split('/');
+        if (partsA.length === 3 && partsB.length === 3) {
+          var dateA = new Date(partsA[2], partsA[1] - 1, partsA[0]);
+          var dateB = new Date(partsB[2], partsB[1] - 1, partsB[0]);
+          return dateB - dateA; // Ordem decrescente (mais recentes primeiro)
+        }
+        return 0;
+      }).forEach(function(u) {
+        var opt = document.createElement("option");
+        opt.value = u;
+        opt.innerText = u;
+        sel.appendChild(opt);
+      });
+    }
+
+    // ========================================
+    // FUNÇÕES PARA TOTAIS POR MARCA
+    // ========================================
+
+    // Calcula o número de dias úteis de um mês (excluindo sábados e domingos)
+    function calcularDiasUteis(mesAno) {
+      // Espera formato MM/AAAA
+      var partes = mesAno.split('/');
+      if (partes.length !== 2) return 0;
+
+      var mes = parseInt(partes[0]) - 1; // JavaScript usa 0-11 para meses
+      var ano = parseInt(partes[1]);
+
+      // Primeiro e último dia do mês
+      var primeiroDia = new Date(ano, mes, 1);
+      var ultimoDia = new Date(ano, mes + 1, 0); // Dia 0 do próximo mês = último dia do mês atual
+
+      var diasUteis = 0;
+
+      // Itera por todos os dias do mês
+      for (var dia = 1; dia <= ultimoDia.getDate(); dia++) {
+        var data = new Date(ano, mes, dia);
+        var diaSemana = data.getDay(); // 0 = Domingo, 6 = Sábado
+
+        // Se não for sábado (6) nem domingo (0), é dia útil
+        if (diaSemana !== 0 && diaSemana !== 6) {
+          diasUteis++;
+        }
+      }
+
+      return diasUteis;
+    }
+
+    // Popula o dropdown de meses e seleciona o mês atual
+    function popularSelectMesMarcas() {
+      var sel = document.getElementById("selMesMarcas");
+      if (!sel) return;
+
+      var mesesUnicos = new Set();
+
+      // Extrai todos os meses disponíveis nos dados
+      if (dadosBrutos && dadosBrutos.length > 0) {
+        dadosBrutos.forEach(function(r) {
+          if (!r || !r[0]) return;
+          var mesAno = extrairMesAno(r[0]); // Data de Entrega
+          if (mesAno && mesAno !== "Outros") {
+            mesesUnicos.add(mesAno);
+          }
+        });
+      }
+
+      // Limpa o select
+      sel.innerHTML = "";
+
+      // Ordena os meses (mais recentes primeiro)
+      var mesesArray = Array.from(mesesUnicos).sort(function(a, b) {
+        // Converte MM/AAAA para comparação
+        var partesA = a.split('/');
+        var partesB = b.split('/');
+        var dataA = new Date(partesA[1], partesA[0] - 1);
+        var dataB = new Date(partesB[1], partesB[0] - 1);
+        return dataB - dataA; // Ordem decrescente
+      });
+
+      // Calcula mês atual
+      var dataAtual = new Date();
+      var mesAtual = ("0" + (dataAtual.getMonth() + 1)).slice(-2) + "/" + dataAtual.getFullYear();
+
+      // Adiciona opções ao select
+      var mesAtualEncontrado = false;
+      mesesArray.forEach(function(m) {
+        var opt = document.createElement("option");
+        opt.value = m;
+        opt.innerText = m;
+        sel.appendChild(opt);
+
+        // Verifica se o mês atual está na lista
+        if (m === mesAtual) {
+          mesAtualEncontrado = true;
+        }
+      });
+
+      // Seleciona o mês atual se existir nos dados, senão seleciona o primeiro
+      if (mesAtualEncontrado) {
+        sel.value = mesAtual;
+        addDebugLog("✅ Mês atual (" + mesAtual + ") selecionado automaticamente para totais por marca");
+      } else if (mesesArray.length > 0) {
+        sel.value = mesesArray[0];
+        addDebugLog("⚠️ Mês atual não encontrado nos dados. Selecionando mês mais recente: " + mesesArray[0]);
+      }
+
+      // Atualiza a tabela de totais por marca
+      atualizarTotaisPorMarca();
+    }
+
+    // Calcula e renderiza os totais por marca do mês selecionado
+    function atualizarTotaisPorMarca() {
+      var mesSelecionado = document.getElementById("selMesMarcas").value;
+
+      if (!mesSelecionado) {
+        addDebugLog("⚠️ Nenhum mês selecionado para totais por marca");
+        return;
+      }
+
+      addDebugLog("📊 Calculando totais por marca para o mês: " + mesSelecionado);
+
+      var totaisPorMarca = {};
+
+      // Agrupa dados por marca do mês selecionado
+      if (dadosBrutos && dadosBrutos.length > 0) {
+        dadosBrutos.forEach(function(row) {
+          if (!row || row.length < 9) return;
+
+          var mesAnoEntrega = extrairMesAno(row[0]); // Data de Entrega
+
+          // Filtra apenas o mês selecionado
+          if (mesAnoEntrega !== mesSelecionado) return;
+
+          var marca = row[4] || "Sem Marca";
+          var valor = limparNumero(row[8]);
+          var qtd = limparNumero(row[6]);
+          var unidade = (row[7] || "").toString().toUpperCase();
+
+          // Ignora linhas com quantidade 0
+          if (qtd === 0) return;
+
+          // Inicializa totais da marca se não existir
+          if (!totaisPorMarca[marca]) {
+            totaisPorMarca[marca] = {
+              reais: 0,
+              pares: 0,
+              metros: 0
+            };
+          }
+
+          // Acumula valores
+          totaisPorMarca[marca].reais += valor;
+
+          if (unidade.includes("PAR")) {
+            totaisPorMarca[marca].pares += qtd;
+          } else if (unidade.includes("M") || unidade.includes("METRO")) {
+            totaisPorMarca[marca].metros += qtd;
+          }
+        });
+      }
+
+      addDebugLog("✅ Encontradas " + Object.keys(totaisPorMarca).length + " marcas no mês " + mesSelecionado);
+
+      // Renderiza a tabela
+      renderizarTabelaMarcas(totaisPorMarca);
+    }
+
+    // Renderiza a tabela de totais por marca
+    function renderizarTabelaMarcas(totaisPorMarca) {
+      var tbody = document.getElementById("tabelaMarcas");
+
+      if (!tbody) return;
+
+      tbody.innerHTML = "";
+
+      // Verifica se há dados
+      if (!totaisPorMarca || Object.keys(totaisPorMarca).length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="marcas-empty">Nenhuma marca encontrada para este mês.</td></tr>';
+        return;
+      }
+
+      // Calcula dias úteis do mês selecionado
+      var mesSelecionado = document.getElementById("selMesMarcas").value;
+      var diasUteis = calcularDiasUteis(mesSelecionado);
+
+      // Atualiza o display de dias úteis no cabeçalho
+      var diasUteisDisplay = document.getElementById("diasUteisDisplay");
+      if (diasUteisDisplay) {
+        diasUteisDisplay.innerText = diasUteis > 0 ? diasUteis : "--";
+      }
+
+      if (diasUteis > 0) {
+        addDebugLog("📅 Mês " + mesSelecionado + " tem " + diasUteis + " dias úteis");
+      }
+
+      // Converte objeto para array e ordena por valor (maior para menor)
+      var marcasArray = Object.keys(totaisPorMarca).map(function(marca) {
+        return {
+          nome: marca,
+          dados: totaisPorMarca[marca]
+        };
+      }).sort(function(a, b) {
+        return b.dados.reais - a.dados.reais; // Ordena por valor decrescente
+      });
+
+      // Calcula totais gerais
+      var totalGeralReais = 0;
+      var totalGeralPares = 0;
+      var totalGeralMetros = 0;
+
+      // Renderiza cada marca
+      marcasArray.forEach(function(item) {
+        var tr = document.createElement("tr");
+
+        totalGeralReais += item.dados.reais;
+        totalGeralPares += item.dados.pares;
+        totalGeralMetros += item.dados.metros;
+
+        // Calcula média de pares por dia útil
+        var paresPorDia = diasUteis > 0 ? (item.dados.pares / diasUteis) : 0;
+        var paresPorDiaFormatado = paresPorDia.toLocaleString('pt-BR', {minimumFractionDigits: 1, maximumFractionDigits: 1});
+
+        tr.innerHTML = `
+          <td class="marca-nome">${item.nome}</td>
+          <td class="valor-destaque">${item.dados.reais.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</td>
+          <td class="qtd-destaque">${item.dados.pares.toLocaleString('pt-BR')}</td>
+          <td class="qtd-destaque" style="color: #8e44ad;">${paresPorDiaFormatado}</td>
+          <td class="qtd-destaque">${item.dados.metros.toLocaleString('pt-BR')}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      // Calcula média geral de pares por dia útil
+      var mediaParesPorDia = diasUteis > 0 ? (totalGeralPares / diasUteis) : 0;
+      var mediaParesPorDiaFormatado = mediaParesPorDia.toLocaleString('pt-BR', {minimumFractionDigits: 1, maximumFractionDigits: 1});
+
+      // Adiciona linha de TOTAL
+      var trTotal = document.createElement("tr");
+      trTotal.style.backgroundColor = "#f0f0f0";
+      trTotal.style.fontWeight = "bold";
+      trTotal.style.borderTop = "2px solid #ddd";
+      trTotal.innerHTML = `
+        <td style="color: #2c3e50;">TOTAL GERAL</td>
+        <td class="valor-destaque">${totalGeralReais.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</td>
+        <td class="qtd-destaque">${totalGeralPares.toLocaleString('pt-BR')}</td>
+        <td class="qtd-destaque" style="color: #8e44ad;">${mediaParesPorDiaFormatado}</td>
+        <td class="qtd-destaque">${totalGeralMetros.toLocaleString('pt-BR')}</td>
+      `;
+      tbody.appendChild(trTotal);
+
+      addDebugLog("✅ Tabela de marcas renderizada com " + marcasArray.length + " marcas | Média geral: " + mediaParesPorDiaFormatado + " pares/dia útil", "success");
+    }
+
+    // ========================================
+    // FIM DAS FUNÇÕES DE TOTAIS POR MARCA
+    // ========================================
+
+    // Função para Imprimir Relatório
+    function imprimirRelatorio() {
+      if (!linhasFiltradas || linhasFiltradas.length === 0) {
+        alert("⚠️ Nenhum dado para imprimir! Ajuste os filtros e tente novamente.");
+        return;
+      }
+
+      addDebugLog("🖨️ Preparando relatório para impressão com " + linhasFiltradas.length + " registros...");
+
+      // Salva o conteúdo atual da tabela
+      var tabelaOriginal = document.getElementById("tabelaCorpo").innerHTML;
+
+      // Preenche informações do relatório
+      var agora = new Date();
+      var dataHoraFormatada = agora.toLocaleDateString('pt-BR') + ' às ' + agora.toLocaleTimeString('pt-BR');
+      document.getElementById("printDataHora").innerText = dataHoraFormatada;
+
+      // Mostra filtros aplicados
+      var filtros = [];
+      var fMesEntrega = document.getElementById("selMesEntrega").value;
+      var fDataEntrega = document.getElementById("selDataEntrega").value;
+      var fDataRecebimento = document.getElementById("selDataRecebimento").value;
+      var fCliente = document.getElementById("selCliente").value;
+      var fMarca = document.getElementById("selMarca").value;
+      var fLocal = document.getElementById("selLocal").value;
+
+      if (fMesEntrega !== "Todos") filtros.push("Mês Entrega: " + fMesEntrega);
+      if (fDataEntrega !== "Todos") filtros.push("Data de Entrega: " + fDataEntrega);
+      if (fDataRecebimento !== "Todos") filtros.push("Data Recebimento: " + fDataRecebimento);
+      if (fCliente !== "Todos") filtros.push("Cliente: " + fCliente);
+      if (fMarca !== "Todos") filtros.push("Marca: " + fMarca);
+      if (fLocal !== "Todos") filtros.push("Local Entrega: " + fLocal);
+
+      document.getElementById("printFiltros").innerText = filtros.length > 0 ? filtros.join(" | ") : "Nenhum filtro aplicado (Todos os dados)";
+      document.getElementById("printTotalRegistros").innerText = linhasFiltradas.length;
+
+      // Renderiza TODOS os dados filtrados na tabela
+      var tbody = document.getElementById("tabelaCorpo");
+      tbody.innerHTML = "";
+
+      linhasFiltradas.forEach(function(r) {
+        var tr = document.createElement("tr");
+
+        var classeBadge = "";
+        var textoUnd = (r[7] || "").toUpperCase(); // índice 7 = Unidade
+        if(textoUnd.includes("PAR")) classeBadge = "badge badge-par";
+        else if(textoUnd.includes("M")) classeBadge = "badge badge-metro";
+        else classeBadge = "badge";
+
+        tr.innerHTML = `
+          <td>${r[0]}</td>
+          <td>${r[1]}</td>
+          <td><b>${r[3]}</b></td>
+          <td>${r[4]}</td>
+          <td>${r[5]}</td>
+          <td>${r[6]}</td>
+          <td><span class="${classeBadge}">${r[7]}</span></td>
+          <td style="color:#2c3e50; font-weight:bold;">${r[8]}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      addDebugLog("✅ Relatório preparado. Abrindo janela de impressão...", "success");
+
+      // Aguarda um pouco para renderizar e então imprime
+      setTimeout(function() {
+        window.print();
+
+        // Após imprimir, restaura a visualização com últimos 50
+        setTimeout(function() {
+          document.getElementById("tabelaCorpo").innerHTML = tabelaOriginal;
+          addDebugLog("✅ Tabela restaurada para visualização (50 registros)", "success");
+        }, 500);
+      }, 300);
+    }
+  </script>
+</body>
+</html>
